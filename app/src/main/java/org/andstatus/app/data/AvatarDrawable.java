@@ -30,7 +30,11 @@ public class AvatarDrawable {
     private final long userId;
     private final DownloadFile downloadFile;
     public static final int AVATAR_SIZE_DIP = 48;
-    
+    public static final int AVATAR_PADDING_LEFT_DIP = 2;
+    public static final int AVATAR_PADDING_TOP_DIP = 6;
+    public static final int AVATAR_PADDING_RIGHT_DIP = 6;
+    public static final int AVATAR_PADDING_BOTTOM_DIP = 2;
+
     private static final Drawable DEFAULT_AVATAR = loadDefaultAvatar(false);
     private static final Drawable DEFAULT_AVATAR_LIGHT = loadDefaultAvatar(true);
     

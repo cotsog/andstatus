@@ -18,7 +18,6 @@ package org.andstatus.app.msg;
 
 import android.app.Activity;
 import android.content.Context;
-import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.text.method.LinkMovementMethod;
 import android.view.LayoutInflater;
@@ -44,7 +43,6 @@ import org.andstatus.app.util.MyLog;
 import org.andstatus.app.util.MyUrlSpan;
 import org.andstatus.app.util.RelativeTime;
 import org.andstatus.app.util.SharedPreferencesUtil;
-import org.andstatus.app.widget.MySimpleCursorAdapter;
 
 import java.util.List;
 
@@ -152,15 +150,17 @@ public class ConversationViewAdapter extends BaseAdapter {
             ((ViewGroup) messageIndented.getParent()).addView(indentView);
         }
 
+        int paddingLeft = Math.round(AvatarDrawable.AVATAR_PADDING_LEFT_DIP * displayDensity);
+        int paddingTop = Math.round(AvatarDrawable.AVATAR_PADDING_TOP_DIP * displayDensity);
+        int paddingRight = Math.round(AvatarDrawable.AVATAR_PADDING_RIGHT_DIP * displayDensity);
+        int paddingBottom = Math.round(AvatarDrawable.AVATAR_PADDING_BOTTOM_DIP * displayDensity);
         if (MyPreferences.showAvatars()) {
             ImageView avatarView = new ImageView(context);
-            int size = Math.round(AvatarDrawable.AVATAR_SIZE_DIP * displayDensity);
+            int size = Math.round(AvatarDrawable.AVATAR_SIZE_DIP * displayDensity)
+                    + paddingLeft + paddingRight;
             avatarView.setScaleType(ScaleType.FIT_CENTER);
+            avatarView.setPadding(paddingLeft, paddingTop, paddingRight, paddingBottom);
             RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(size, size);
-            layoutParams.topMargin = 3;
-            if (oMsg.mIndentLevel > 0) {
-                layoutParams.leftMargin = 1;
-            }
             if (viewToTheLeftId == 0) {
                 layoutParams.addRule(RelativeLayout.ALIGN_PARENT_LEFT, RelativeLayout.TRUE);
             } else {
@@ -170,10 +170,12 @@ public class ConversationViewAdapter extends BaseAdapter {
             if (oMsg.mAvatarDrawable != null) {
                 avatarView.setImageDrawable(oMsg.mAvatarDrawable.getDrawable());
             }
-            indentPixels += size;
+            indentPixels += size ;
             ((ViewGroup) messageIndented.getParent()).addView(avatarView);
+        } else {
+            indentPixels += paddingLeft;
         }
-        messageIndented.setPadding(indentPixels + 6, 2, 6, 2);
+        messageIndented.setPadding(indentPixels, paddingTop, paddingRight, paddingBottom);
     }
 
     private void setMessageAuthor(ConversationViewItem oMsg, View messageView) {
