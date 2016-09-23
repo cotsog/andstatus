@@ -45,11 +45,13 @@ public class MbMessage {
 
     public MbMessage rebloggedMessage = null;
     public MbMessage inReplyToMessage = null;
+    public final List<MbMessage> replies = new ArrayList<>();
     public String via = "";
     public String url="";
     private boolean isPublic = false;
+    private TriState isSubscribed = TriState.UNKNOWN;
 
-    public List<MbAttachment> attachments = new ArrayList<MbAttachment>();
+    public final List<MbAttachment> attachments = new ArrayList<>();
     
     public boolean isPublic() {
         return isPublic;
@@ -120,21 +122,15 @@ public class MbMessage {
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if (obj == null) {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-        MbMessage other = (MbMessage) obj;
-        if (hashCode() != other.hashCode()) {
-            return false;
-        }
-        return true;
+        MbMessage other = (MbMessage) o;
+        return hashCode() == other.hashCode();
     }
 
     @Override
@@ -189,4 +185,11 @@ public class MbMessage {
         return MyLog.formatKeyValue(this, builder.toString());
     }
 
+    public TriState isSubscribed() {
+        return isSubscribed;
+    }
+
+    public void setSubscribed(TriState isSubscribed) {
+        this.isSubscribed = isSubscribed;
+    }
 }

@@ -16,6 +16,8 @@
 
 package org.andstatus.app.account;
 
+import android.support.annotation.NonNull;
+
 import org.andstatus.app.context.MyContext;
 import org.andstatus.app.origin.Origin;
 
@@ -27,10 +29,6 @@ import org.andstatus.app.origin.Origin;
  */
 public class AccountName {
 
-    /**
-     * Prefix of the user's Preferences file
-     */
-    public static final String FILE_PREFIX = "user_";
     public static final String ORIGIN_SEPARATOR = "/";
     
     /**
@@ -89,9 +87,15 @@ public class AccountName {
         return accountName;
     }
 
-    protected static AccountName fromOriginAndUserNames(MyContext myContext, String originName, String username) {
+    protected static AccountName fromOriginAndUserNames(MyContext myContext, String originName,
+                                                        String username) {
+        return fromOriginAndUserName(
+                myContext.persistentOrigins().fromName(fixOriginName(originName)), username);
+    }
+
+    public static AccountName fromOriginAndUserName(@NonNull Origin origin, String username) {
         AccountName accountName = new AccountName();
-        accountName.origin = myContext.persistentOrigins().fromName(fixOriginName(originName));
+        accountName.origin = origin;
         accountName.username = accountName.fixUsername(username);
         return accountName;
     }
@@ -135,18 +139,14 @@ public class AccountName {
         return origin.getName();
     }
 
-    /**
-     * Name of preferences file for this MyAccount
-     * @return Name without path and extension
-     */
-    String prefsFilename() {
-        return FILE_PREFIX + toString().replace("@", "-").replace(ORIGIN_SEPARATOR, "-");
+    public String getLogName() {
+        return toString().replace("@", "-").replace(ORIGIN_SEPARATOR, "-");
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof AccountName)) return false;
+        if (o == null || !(o instanceof AccountName)) return false;
 
         AccountName that = (AccountName) o;
 

@@ -185,10 +185,6 @@ public class Origin {
         return "";
     }
 
-    public OriginConnectionData getConnectionData(TriState triStateOAuth) {
-        return OriginConnectionData.fromOrigin(this, triStateOAuth);
-    }
-
     public boolean canSetUrlOfOrigin() {
         return originType.canSetUrlOfOrigin();
     }
@@ -368,7 +364,7 @@ public class Origin {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof Origin)) return false;
+        if (o == null || !(o instanceof Origin)) return false;
 
         Origin origin = (Origin) o;
 

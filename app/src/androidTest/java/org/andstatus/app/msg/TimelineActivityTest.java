@@ -21,6 +21,7 @@ import android.content.Intent;
 import android.widget.CheckBox;
 import android.widget.ListView;
 
+import org.andstatus.app.ActivityTestHelper;
 import org.andstatus.app.ListActivityTestHelper;
 import org.andstatus.app.R;
 import org.andstatus.app.SelectorDialog;
@@ -221,10 +222,12 @@ public class TimelineActivityTest extends android.test.ActivityInstrumentationTe
         long msgId = helper.getListItemIdOfLoadedReply();
         String logMsg = "msgId:" + msgId
                 + "; text:'" + MyQuery.msgIdToStringColumnValue(MsgTable.BODY, msgId) + "'";
-        assertTrue(logMsg, helper.invokeContextMenuAction4ListItemId(method, msgId, MessageListContextMenuItem.NONEXISTENT));
+        assertTrue(logMsg, helper.invokeContextMenuAction4ListItemId(method, msgId, MessageListContextMenuItem.ACT_AS_USER));
         long userId1 = getActivity().getContextMenu().getActorUserIdForCurrentMessage();
         logMsg += "; userId1=" + userId1;
         assertTrue(logMsg, userId1 != 0);
+
+        ActivityTestHelper.closeContextMenu(this);
 
         helper.invokeContextMenuAction4ListItemId(method, msgId, MessageListContextMenuItem.ACT_AS);
 
@@ -233,7 +236,7 @@ public class TimelineActivityTest extends android.test.ActivityInstrumentationTe
         logMsg += ", user1:" + ma.getAccountName() + ", user2:" + ma2.getAccountName();
         assertNotSame(logMsg, ma, ma2);
 
-        helper.selectIdFromSelectorDialog(method, ma2.getUserId());
+        helper.selectIdFromSelectorDialog(logMsg, ma2.getUserId());
         DbUtils.waitMs(method, 500);
 
         long userId3 = getActivity().getContextMenu().getActorUserIdForCurrentMessage();

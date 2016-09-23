@@ -118,6 +118,10 @@ public final class MyAccount implements Comparable<MyAccount> {
     public static final String KEY_IS_SYNCED_AUTOMATICALLY = "sync_automatically";
     public static final String KEY_ORDER = "order";
 
+    public AccountName getOAccountName() {
+        return oAccountName;
+    }
+
     /** Companion class used to load/create/change/delete {@link MyAccount}'s data */
     public static final class Builder implements Parcelable {
         private static final String TAG = MyAccount.TAG + "." + Builder.class.getSimpleName();
@@ -185,20 +189,14 @@ public final class MyAccount implements Comparable<MyAccount> {
         }
 
         private void setConnection() {
-            Origin origin = myAccount.oAccountName.getOrigin();
-            OriginConnectionData connectionData = origin.getConnectionData(TriState.fromBoolean(myAccount.isOAuth));
+            OriginConnectionData connectionData = OriginConnectionData.fromAccountName(
+                    myAccount.oAccountName, TriState.fromBoolean(myAccount.isOAuth));
             connectionData.setAccountUserOid(myAccount.userOid);
-            connectionData.setAccountUsername(myAccount.getUsername());
             connectionData.setDataReader(myAccount.accountData);
             try {
-                myAccount.connection = connectionData.getConnectionClass().newInstance();
-                myAccount.connection.enrichConnectionData(connectionData);
-                myAccount.connection.setAccountData(connectionData);
+                myAccount.connection = connectionData.newConnection();
             // TODO: Since API19 we will use ReflectiveOperationException as a common superclass of these two exceptions: InstantiationException and IllegalAccessException
-            } catch (InstantiationException e) {
-                myAccount.connection = null;
-                MyLog.i(TAG, e);
-            } catch (IllegalAccessException e) {
+            } catch (ConnectionException e) {
                 myAccount.connection = null;
                 MyLog.i(TAG, e);
             }
@@ -252,9 +250,6 @@ public final class MyAccount implements Comparable<MyAccount> {
          */
         boolean deleteData() {
             boolean ok = true;
-
-            // Old preferences file may be deleted, if it exists...
-            ok = SharedPreferencesUtil.delete(myContext.context(), myAccount.oAccountName.prefsFilename());
 
             if (isPersistent() && myAccount.userId != 0) {
                 // TODO: Delete databases for this User
@@ -363,19 +358,16 @@ public final class MyAccount implements Comparable<MyAccount> {
         
         public boolean getOriginConfig() throws ConnectionException {
             boolean ok = false;
-            if (!ok) {
-                MbConfig config = null;
-                try {
-                    config = myAccount.getConnection().getConfig();
-                    ok = (!config.isEmpty());
-                    if (ok) {
-                        Origin.Builder originBuilder = new Origin.Builder(
-                                myContext.persistentOrigins().fromId(myAccount.getOriginId())); 
-                        originBuilder.save(config);
-                    }
-                } finally {
-                    MyLog.v(this, "Get Origin config " + (ok ? "succeeded" : "failed"));
+            try {
+                MbConfig config = myAccount.getConnection().getConfig();
+                ok = (!config.isEmpty());
+                if (ok) {
+                    Origin.Builder originBuilder = new Origin.Builder(
+                            myContext.persistentOrigins().fromId(myAccount.getOriginId()));
+                    originBuilder.save(config);
                 }
+            } finally {
+                MyLog.v(this, "Get Origin config " + (ok ? "succeeded" : "failed"));
             }
             return ok;
         }
@@ -386,22 +378,18 @@ public final class MyAccount implements Comparable<MyAccount> {
          * 
          * @see CredentialsVerificationStatus
          * @param reVerify Verify even if it was verified already
-         * @return boolean
+         * @return true if verified successfully
          */
         public boolean verifyCredentials(boolean reVerify) throws ConnectionException {
-            boolean ok = false;
             if (!reVerify && myAccount.isValidAndSucceeded()) {
-                ok = true;
+                return true;
             }
-            if (!ok) {
-                try {
-                    MbUser user = myAccount.getConnection().verifyCredentials();
-                    ok = onCredentialsVerified(user, null);
-                } catch (ConnectionException e) {
-                    ok = onCredentialsVerified(null, e);
-                }
+            try {
+                MbUser user = myAccount.getConnection().verifyCredentials();
+                return onCredentialsVerified(user, null);
+            } catch (ConnectionException e) {
+                return onCredentialsVerified(null, e);
             }
-            return ok;
         }
         
         public boolean onCredentialsVerified(MbUser user, ConnectionException ce) throws ConnectionException {
@@ -441,9 +429,8 @@ public final class MyAccount implements Comparable<MyAccount> {
                 // Now we know the name (or proper case of the name) of this User!
                 // We don't recreate MyAccount object for the new name
                 //   in order to preserve credentials.
-                myAccount.oAccountName = AccountName.fromOriginAndUserNames(
-                        myContext,
-                        myAccount.oAccountName.getOriginName(), newName);
+                myAccount.oAccountName = AccountName.fromOriginAndUserName(
+                        myAccount.oAccountName.getOrigin(), newName);
                 myAccount.connection.save(myAccount.accountData);
                 setConnection();
                 save();
@@ -814,25 +801,6 @@ public final class MyAccount implements Comparable<MyAccount> {
         return oAccountName.getOrigin().getId();
     }
     
-    /**
-     * @return SharedPreferences of this MyAccount. Used to store preferences which are application specific
-     *   i.e. excluding data specific to Account. 
-     */
-    public SharedPreferences getAccountPreferences() {
-        SharedPreferences sp = null;
-        String prefsFileName = oAccountName.prefsFilename();
-        
-        if (prefsFileName.length() > 0) {
-            try {
-                sp = SharedPreferencesUtil.getSharedPreferences(prefsFileName);
-            } catch (Exception e) {
-                MyLog.e(this, "Cound't get preferences '" + prefsFileName + "'", e);
-                sp = null;
-            }
-        }
-        return sp;
-    }
-
     public Connection getConnection() {
         return connection;
     }
@@ -1013,7 +981,7 @@ public final class MyAccount implements Comparable<MyAccount> {
     public MyAccount firstOtherAccountOfThisOrigin() {
         for (MyAccount persistentAccount : MyContextHolder.get().persistentAccounts().list()) {
             if (persistentAccount.getOriginId() == this.getOriginId() 
-                    && persistentAccount != this) {
+                    && !persistentAccount.equals(this)) {
                 return persistentAccount;
             }
         }
@@ -1023,7 +991,7 @@ public final class MyAccount implements Comparable<MyAccount> {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof MyAccount)) return false;
+        if (o == null || !(o instanceof MyAccount)) return false;
 
         MyAccount myAccount = (MyAccount) o;
 

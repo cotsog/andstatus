@@ -27,6 +27,7 @@ import org.andstatus.app.net.http.ConnectionException;
 import org.andstatus.app.net.http.ConnectionException.StatusCode;
 import org.andstatus.app.net.http.HttpConnection;
 import org.andstatus.app.net.http.HttpConnectionData;
+import org.andstatus.app.net.http.HttpConnectionMock;
 import org.andstatus.app.net.http.OAuthConsumerAndProvider;
 import org.andstatus.app.net.social.MbTimelineItem.ItemType;
 import org.andstatus.app.origin.OriginConnectionData;
@@ -51,11 +52,9 @@ import java.util.Locale;
  * @author yvolk@yurivolkov.com, torgny.bjers
  */
 public abstract class Connection {
-
-    static final String  APPLICATION_ID = "http://andstatus.org/andstatus";
     public static final String KEY_PASSWORD = "password";
     protected static final String EXTENSION = ".json";
-    
+
     /**
      * Connection APIs known
      */
@@ -212,7 +211,7 @@ public abstract class Connection {
     /**
      * Set User's password if the Connection object needs it
      */
-    public final void setPassword(String password) { 
+    public final void setPassword(String password) {
         http.setPassword(password);
     }
 
@@ -397,9 +396,9 @@ public abstract class Connection {
         return out;
     }
 
-    public final void setAccountData(OriginConnectionData connectionData) throws InstantiationException, IllegalAccessException {
+    public final void setAccountData(OriginConnectionData connectionData) throws ConnectionException {
         this.data = connectionData;
-        http = connectionData.newHttpConnection();
+        http = connectionData.newHttpConnection("");
         http.setConnectionData(HttpConnectionData.fromConnectionData(connectionData));
     }
 
@@ -529,13 +528,18 @@ public abstract class Connection {
         http.downloadFile(url, file);
     }
 
-    public HttpConnection getHttp() {
-        return http;
+    @NonNull
+    public HttpConnectionMock getHttpMock() {
+        if (http != null && HttpConnectionMock.class.isAssignableFrom(http.getClass())) {
+            return (HttpConnectionMock) http;
+        }
+        throw new IllegalStateException(http == null ? "http is null" : "http is " +
+                http.getClass().getName());
     }
 
     protected String prependWithBasicPath(String url) {
         if (!TextUtils.isEmpty(url) && !url.contains("://")) {
-            url = http.data.basicPath + "/" + url;
+            url = http.data.getAccountName().getOrigin().getOriginType().getBasicPath() + "/" + url;
         }
         return url;
     }

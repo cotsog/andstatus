@@ -224,9 +224,7 @@ public class AccountSettingsActivity extends MyActivity {
                 // If we have changed the System, we should recreate the Account
                 state.builder = MyAccount.Builder.newOrExistingFromAccountName(
                         MyContextHolder.get(), 
-                        AccountName.fromOriginAndUserNames(
-                                MyContextHolder.get(),
-                                origin.getName(),
+                        AccountName.fromOriginAndUserName(origin,
                                 state.getAccount().getUsername()).toString(),
                         TriState.fromBoolean(state.getAccount().isOAuth()));
                 updateScreen();
@@ -239,19 +237,17 @@ public class AccountSettingsActivity extends MyActivity {
     
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        super.onCreateOptionsMenu(menu);
-
-        MenuInflater inflater = getMenuInflater();
-        inflater.inflate(R.menu.account_settings, menu);
-        return true;
+        getMenuInflater().inflate(R.menu.account_settings, menu);
+        return super.onCreateOptionsMenu(menu);
     }
     
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
         MenuItem item = menu.findItem(R.id.remove_account_menu_id);
-        item.setEnabled(state.builder.isPersistent());
-        item.setVisible(state.builder.isPersistent());
-        
+        if (item != null) {
+            item.setEnabled(state.builder.isPersistent());
+            item.setVisible(state.builder.isPersistent());
+        }
         return super.onPrepareOptionsMenu(menu);
     }
 
@@ -622,11 +618,10 @@ public class AccountSettingsActivity extends MyActivity {
                 String username = usernameEditable.getText().toString();
                 if (username.compareTo(state.getAccount().getUsername()) != 0) {
                     boolean isOAuth = state.getAccount().isOAuth();
-                    String originName = state.getAccount().getOrigin().getName();
                     state.builder = MyAccount.Builder.newOrExistingFromAccountName(
                             MyContextHolder.get(),
-                            AccountName.fromOriginAndUserNames(MyContextHolder.get(),
-                                    originName, username).toString(),
+                            AccountName.fromOriginAndUserName(
+                                    state.getAccount().getOrigin(), username).toString(),
                             TriState.fromBoolean(isOAuth));
                 }
             }
@@ -801,7 +796,7 @@ public class AccountSettingsActivity extends MyActivity {
                 if (!requestSucceeded) {
                     message2 = AccountSettingsActivity.this
                             .getString(R.string.dialog_title_authentication_failed);
-                    if (message != null && message.length() > 0) {
+                    if (!TextUtils.isEmpty(message)) {
                         message2 = message2 + ": " + message;
                     }
                     MyLog.d(TAG, message2);

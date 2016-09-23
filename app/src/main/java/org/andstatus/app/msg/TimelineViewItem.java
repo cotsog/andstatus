@@ -76,7 +76,7 @@ public class TimelineViewItem extends MessageViewItem {
 
         item.authorName = TimelineSql.userColumnIndexToNameAtTimeline(cursor,
                 cursor.getColumnIndex(UserTable.AUTHOR_NAME), MyPreferences.getShowOrigin());
-        item.body = MyHtml.htmlifyIfPlain(DbUtils.getString(cursor, MsgTable.BODY));
+        item.body = MyHtml.htmlify(DbUtils.getString(cursor, MsgTable.BODY));
         item.inReplyToMsgId = DbUtils.getLong(cursor, MsgTable.IN_REPLY_TO_MSG_ID);
         item.inReplyToName = DbUtils.getString(cursor, UserTable.IN_REPLY_TO_NAME);
         item.recipientName = DbUtils.getString(cursor, UserTable.RECIPIENT_NAME);
@@ -142,7 +142,8 @@ public class TimelineViewItem extends MessageViewItem {
     }
 
     private void setMessageSource(Context context, StringBuilder messageDetails) {
-        if (!SharedPreferencesUtil.isEmpty(messageSource) && !"ostatus".equals(messageSource)) {
+        if (!SharedPreferencesUtil.isEmpty(messageSource) && !"ostatus".equals(messageSource)
+                && !"unknown".equals(messageSource)) {
             messageDetails.append(" " + String.format(
                     context.getText(R.string.message_source_from).toString(), messageSource));
         }
